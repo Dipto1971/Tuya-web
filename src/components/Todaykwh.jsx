@@ -10,14 +10,7 @@ export function Todaykwh() {
   useEffect(() => {
     const fetchTodayConsumption = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/today-consumption`,
-          {
-            headers: {
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch("/api/today-consumption");
         const result = await response.json();
 
         if (result.success) {

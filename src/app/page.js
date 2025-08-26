@@ -44,14 +44,28 @@ export default function Home() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-xl blur-lg opacity-50"></div>
                 <div className="relative bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl">
-                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <svg
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
                   </svg>
                 </div>
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-white mb-1">Today&apos;s Overview</h2>
-                <p className="text-blue-200 text-lg">Energy consumption & cost analysis</p>
+                <h2 className="text-3xl font-bold text-white mb-1">
+                  Today&apos;s Overview
+                </h2>
+                <p className="text-blue-200 text-lg">
+                  Energy consumption & cost analysis
+                </p>
               </div>
             </div>
           </div>
@@ -73,14 +87,28 @@ export default function Home() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl blur-lg opacity-50"></div>
                 <div className="relative bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl">
-                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <svg
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
                   </svg>
                 </div>
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-white ">Power Analytics</h2>
-                <p className="text-purple-200 text-lg">Real-time power consumption monitoring</p>
+                <h2 className="text-3xl font-bold text-white ">
+                  Power Analytics
+                </h2>
+                <p className="text-purple-200 text-lg">
+                  Real-time power consumption monitoring
+                </p>
               </div>
             </div>
           </div>
@@ -142,40 +170,40 @@ export default function Home() {
 function App() {
   const [data, setData] = useState(null);
   const [blink, setBlink] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const ws = new WebSocket(
-      `${process.env.NEXT_PUBLIC_WEBSOCKET_URL}?ngrok-skip-browser-warning=1`
-    );
+  // Fetch real-time data using API routes
+  const fetchDeviceData = async () => {
+    try {
+      const response = await fetch("/api/device-status");
+      const result = await response.json();
 
-    ws.onopen = () => {
-      console.log("✅ WebSocket connected");
-      setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const newData = JSON.parse(event.data);
-
-        setData(newData);
+      if (result.success && result.data) {
+        setData(result.data);
+        setIsConnected(true);
         setBlink(true);
         setTimeout(() => setBlink(false), 150);
-      } catch (err) {
-        console.error("❌ Error parsing message", err);
+      } else {
+        console.error("Failed to fetch device data:", result.error);
+        setIsConnected(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching device data:", error);
+      setIsConnected(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    ws.onerror = (err) => {
-      console.error("❌ WebSocket error", err);
-    };
+  useEffect(() => {
+    // Initial fetch
+    fetchDeviceData();
 
-    ws.onclose = () => {
-      console.warn("⚠️ WebSocket closed");
-      setWsConnected(false);
-    };
+    // Set up polling for real-time updates (every 5 seconds)
+    const interval = setInterval(fetchDeviceData, 5000);
 
-    return () => ws.close();
+    return () => clearInterval(interval);
   }, []);
 
   const handleUserManualDownload = () => {
@@ -225,13 +253,14 @@ function App() {
             </div>
             <div className="flex items-center gap-2">
               <div
-                className={`w-3 h-3 rounded-full ${wsConnected
-                  ? "bg-green-400 shadow-lg shadow-green-400/50"
-                  : "bg-red-400 shadow-lg shadow-red-400/50"
-                  }`}
+                className={`w-3 h-3 rounded-full ${
+                  isConnected
+                    ? "bg-green-400 shadow-lg shadow-green-400/50"
+                    : "bg-red-400 shadow-lg shadow-red-400/50"
+                }`}
               ></div>
               <span className="text-sm text-white font-medium">
-                {wsConnected ? "Connected" : "Disconnected"}
+                {isConnected ? "Connected" : "Disconnected"}
               </span>
             </div>
           </div>
@@ -239,21 +268,34 @@ function App() {
       </div>
 
       {/* Data Section with Glass Effect */}
-      {data ? (
+      {isLoading ? (
+        <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl shadow-xl p-6">
+          <div className="flex items-center justify-center h-32">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white font-medium">Connecting to device...</p>
+            </div>
+          </div>
+        </div>
+      ) : data ? (
         <div className="flex gap-6">
           <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl shadow-xl p-6 w-80">
             <div className="flex flex-col space-y-4">
               <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 hover:bg-white/15 transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium text-blue-200">Time</div>
-                  <div className={`font-semibold text-white text-lg ${blinkClass}`}>
+                  <div
+                    className={`font-semibold text-white text-lg ${blinkClass}`}
+                  >
                     {new Date(data.time).toLocaleTimeString()}
                   </div>
                 </div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 hover:bg-white/15 transition-all duration-200">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium text-teal-200">Current</div>
+                  <div className="text-sm font-medium text-teal-200">
+                    Current
+                  </div>
                   <div className="font-semibold text-white text-lg">
                     {data.current} mA
                   </div>
@@ -261,7 +303,9 @@ function App() {
               </div>
               <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 hover:bg-white/15 transition-all duration-200">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium text-blue-200">Voltage</div>
+                  <div className="text-sm font-medium text-blue-200">
+                    Voltage
+                  </div>
                   <div className="font-semibold text-white text-lg">
                     {data.voltage} V
                   </div>
@@ -287,8 +331,13 @@ function App() {
         <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl shadow-xl p-6">
           <div className="flex items-center justify-center h-32">
             <div className="text-center">
-              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-white font-medium">Waiting for data...</p>
+              <div className="w-8 h-8 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white font-medium">
+                Failed to connect to device
+              </p>
+              <p className="text-red-200 text-sm mt-2">
+                Check device connection and try again
+              </p>
             </div>
           </div>
         </div>

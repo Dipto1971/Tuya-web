@@ -60,9 +60,7 @@ export function UnitMoneyChart() {
       }
       setError(null);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/main-chart/data`
-      );
+      const response = await fetch("/api/today-data");
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -71,20 +69,24 @@ export function UnitMoneyChart() {
       const result = await response.json();
 
       if (result.success && result.data) {
-        // Extract week data and calculate daily costs
-        const weekData = result.data.week || [];
+        // Process the data from our API structure
+        const dataPoints = result.data;
 
         // Calculate daily cost based on power consumption using Bangladesh slab-based tariff
-        const dailyCostData = weekData.map((item, index) => {
+        const dailyCostData = dataPoints.map((item, index) => {
           const date = new Date();
-          date.setDate(date.getDate() - (weekData.length - 1 - index));
+          date.setDate(date.getDate() - (dataPoints.length - 1 - index));
           const dayName = date.toLocaleDateString("en-US", {
             weekday: "short",
           });
 
+          // Extract power value from the data structure
+          const powerItem = item.data?.find((d) => d.code === "cur_power");
+          const power = powerItem ? powerItem.value : 0;
+
           // Calculate daily power consumption in kWh
           // Assuming average 8 hours of usage per day
-          const dailyPowerKwh = ((item.power || 0) / 1000) * 8;
+          const dailyPowerKwh = (power / 1000) * 8;
 
           // Calculate cost using Bangladesh slab-based tariff
           const dailyCost = calculateElectricityCost(dailyPowerKwh);

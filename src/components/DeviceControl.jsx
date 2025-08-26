@@ -12,14 +12,7 @@ export function DeviceControl() {
   React.useEffect(() => {
     const fetchSwitchStatus = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/switch-status`,
-          {
-            headers: {
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch("/api/switch-status");
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -47,16 +40,13 @@ export function DeviceControl() {
     const newState = !switchState;
     try {
       setSwitchLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/switch`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ state: newState }),
-        }
-      );
+      const response = await fetch("/api/switch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ state: newState }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

@@ -36,9 +36,7 @@ export function UnitkwhChart() {
       }
       setError(null);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/main-chart/data`
-      );
+      const response = await fetch("/api/today-data");
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -47,18 +45,21 @@ export function UnitkwhChart() {
       const result = await response.json();
 
       if (result.success && result.data) {
-        // Extract week data and calculate daily kWh
-        const weekData = result.data.week || [];
+        // Process the data from our API structure
+        const dataPoints = result.data;
 
         // Calculate daily kWh based on power consumption
-        const dailyKwhData = weekData.map((item, index) => {
+        const dailyKwhData = dataPoints.map((item, index) => {
           const date = new Date();
-          date.setDate(date.getDate() - (weekData.length - 1 - index));
+          date.setDate(date.getDate() - (dataPoints.length - 1 - index));
           const dayName = date.toLocaleDateString("en-US", {
             weekday: "short",
           });
 
-          const dailyKwh = ((item.power || 0) / 1000) * 8;
+          // Extract power value from the data structure
+          const powerItem = item.data?.find((d) => d.code === "cur_power");
+          const power = powerItem ? powerItem.value : 0;
+          const dailyKwh = (power / 1000) * 8; // Convert to kWh (assuming 8 hours usage)
 
           return {
             day: dayName,

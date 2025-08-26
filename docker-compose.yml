@@ -1,0 +1,194 @@
+version: "3.8"
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: tuya-alternative-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: tuya123
+      MONGO_INITDB_DATABASE: tuya
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - tuya-network
+
+  # MongoDB Express (Web-based admin interface)
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: tuya-alternative-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: tuya123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:tuya123@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: tuya123
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - tuya-network
+
+  # Redis (for caching and session management)
+  redis:
+    image: redis:7-alpine
+    container_name: tuya-alternative-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tuya-network
+
+  # PostgreSQL (alternative database option)
+  postgres:
+    image: postgres:15-alpine
+    container_name: tuya-alternative-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tuya_alt
+      POSTGRES_USER: tuya_user
+      POSTGRES_PASSWORD: tuya123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tuya-network
+
+  # pgAdmin (PostgreSQL admin interface)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tuya-alternative-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tuya-alternative.com
+      PGADMIN_DEFAULT_PASSWORD: tuya123
+    ports:
+      - "8082:80"
+    depends_on:
+      - postgres
+    networks:
+      - tuya-network
+
+  # InfluxDB (for time-series data)
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: tuya-alternative-influxdb
+    restart: unless-stopped
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: tuya123
+      DOCKER_INFLUXDB_INIT_ORG: tuya-org
+      DOCKER_INFLUXDB_INIT_BUCKET: energy-data
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: tuya-admin-token-123
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - tuya-network
+
+  # Grafana (for data visualization)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tuya-alternative-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: tuya123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    networks:
+      - tuya-network
+
+  # Nginx (reverse proxy)
+  nginx:
+    image: nginx:alpine
+    container_name: tuya-alternative-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - tuya-network
+
+  # Prometheus (monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tuya-alternative-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
+    networks:
+      - tuya-network
+
+  # Node Exporter (system metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: tuya-alternative-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks:
+      - tuya-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  influxdb_data:
+    driver: local
+  grafana_data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  tuya-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

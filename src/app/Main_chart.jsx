@@ -60,19 +60,13 @@ export function ChartAreaInteractive() {
     try {
       if (isRefresh) {
         setRefreshing(true);
-      } else {``
+      } else {
+        ``;
         setLoading(true);
       }
 
       setError(null);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/main-chart/data`,
-        {
-          headers: {
-            "ngrok-skip-browser-warning": "1",
-          },
-        }
-      );
+      const response = await fetch("/api/today-data");
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

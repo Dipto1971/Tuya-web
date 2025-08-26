@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      .loading {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 3px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Frontend API Test</h1>
+
+    <div id="device-status" class="test loading">
+      <h3>Device Status Test</h3>
+      <p>Testing /api/device-status...</p>
+      <pre id="device-status-result">Loading...</pre>
+    </div>
+
+    <div id="today-consumption" class="test loading">
+      <h3>Today's Consumption Test</h3>
+      <p>Testing /api/today-consumption...</p>
+      <pre id="today-consumption-result">Loading...</pre>
+    </div>
+
+    <div id="switch-status" class="test loading">
+      <h3>Switch Status Test</h3>
+      <p>Testing /api/switch-status...</p>
+      <pre id="switch-status-result">Loading...</pre>
+    </div>
+
+    <script>
+      async function testAPI(endpoint, resultElement, containerElement) {
+        try {
+          const response = await fetch(endpoint);
+          const data = await response.json();
+
+          resultElement.textContent = JSON.stringify(data, null, 2);
+          containerElement.className = "test success";
+          containerElement.innerHTML += "<p>✅ Success!</p>";
+        } catch (error) {
+          resultElement.textContent = `Error: ${error.message}`;
+          containerElement.className = "test error";
+          containerElement.innerHTML += "<p>❌ Failed!</p>";
+        }
+      }
+
+      // Test all endpoints
+      testAPI(
+        "/api/device-status",
+        document.getElementById("device-status-result"),
+        document.getElementById("device-status")
+      );
+      testAPI(
+        "/api/today-consumption",
+        document.getElementById("today-consumption-result"),
+        document.getElementById("today-consumption")
+      );
+      testAPI(
+        "/api/switch-status",
+        document.getElementById("switch-status-result"),
+        document.getElementById("switch-status")
+      );
+    </script>
+  </body>
+</html>
+

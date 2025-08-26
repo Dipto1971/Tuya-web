@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/device-status/route": "app/api/device-status/route.js",
+  "/api/switch-status/route": "app/api/switch-status/route.js",
+  "/api/switch/route": "app/api/switch/route.js",
+  "/api/today-consumption/route": "app/api/today-consumption/route.js",
+  "/api/today-data/route": "app/api/today-data/route.js",
+  "/page": "app/page.js"
+}
